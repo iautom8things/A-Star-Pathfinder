@@ -7,7 +7,7 @@ import sys, pygame, math, heapq
 from pygame.locals import *
 
 # Adjust the size of the board and the cells
-cell_size = 50
+cell_size = 25
 num_cells = 20
 
 
@@ -37,7 +37,7 @@ screen = pygame.display.set_mode(size)
 pygame.display.set_caption = ('Pathfinder')
 
 
-start_placed = goal_placed = needs_refresh = False
+start_placed = goal_placed = needs_refresh = step_started = False
 last_wall = None
 start = None
 goal = None
@@ -67,12 +67,18 @@ pq_dict = {}
              
 closed_list = {}    # A dictionary of closed cells
 
+# This allows for the dynamic changing of the chosen heuristic
+heuristic = 'crow' # Could be 'manhattan' or 'crow' anything else is assumed to be 'zero'
+
 # Function to reduce repeated PyGame code to refresh the board
+
 def showBoard(screen, board):
     screen.blit(board, (0,0))
     pygame.display.flip()
 
+
 # Function to Draw the initial board.
+
 def initBoard(board):
     background = pygame.Surface(board.get_size())
     background = background.convert()
@@ -84,9 +90,12 @@ def initBoard(board):
         pygame.draw.line(background, black, (0, i), (cell_size*num_cells, i), 2)
     return background
 
+
 # Function in attempt to beautify my code, nothing more.
+
 def calc_f(node):
     cells[node]['f_score'] = cells[node]['h_score'] + cells[node]['g_score']
+
 
 # Calculate the heuristic score, straight line distance between two points:
 # You'll notice I multiply by 10. This is because of how I keep track of the g_score, which you'll see later
@@ -100,20 +109,30 @@ def calc_f(node):
 # So we multiply that by 10 to get a cost of 14 to move diagonal and 10 to move orthoganal.
 
 def calc_h(node):
+    global heuristic
     x1, y1 = goal
     x0, y0 = node
-    cells[node]['h_score'] = math.sqrt( (x1-x0)**2 + (y1-y0)**2 )*10
+    if heuristic == 'manhattan':
+        cells[node]['h_score'] = (abs(x1-x0)+abs(y1-y0))*10#
+    elif heuristic == 'crow':
+        cells[node]['h_score'] = math.sqrt( (x1-x0)**2 + (y1-y0)**2 )*10
+    else:
+        cells[node]['h_score'] = 0
+
 
 # Technically, I need to change the way I've represented the board. I only realized that after coding this up
 # I did this given a square 2D grid of equal sizes. I really only did this by habbit. It SHOULD be more graph-like
 # Where each cell has its adjacency matrix...my baaaaad. 
 #
 # Anyways, this is a helper function to check if a given coord is on the board
+
 def onBoard(node):
     x, y = node
     return x >= 0 and x < num_cells and y >= 0 and y < num_cells
 
+
 # Return a list of adjacent orthoganal walkable cells 
+
 def orthoganals(current):
     x, y = current
     
@@ -124,8 +143,10 @@ def orthoganals(current):
     
     directions = [N, E, S, W]
     return [x for x in directions if onBoard(x) and cells[x]['state'] != 'Wall' and not x in closed_list]
-    
+
+
 # Check if diag is blocked by a wall, making it unwalkable from current
+
 def blocked_diagnol(current,diag):
     x, y = current
     
@@ -149,7 +170,9 @@ def blocked_diagnol(current,diag):
     else:
         return False # Technically, you've done goofed if you arrive here.
 
+
 # Return a list of adjacent diagonal walkable cells
+
 def diagonals(current):
     x, y = current
     
@@ -161,12 +184,16 @@ def diagonals(current):
     directions = [NE, SE, SW, NW]
     return [x for x in directions if onBoard(x) and cells[x]['state'] != 'Wall' and not x in closed_list and not blocked_diagnol(current,x)]
 
+
 # Update a child node with information from parent, such as g_score and the parent's coords
+
 def update_child(parent, child, cost_to_travel):
     cells[child]['g_score'] = cells[parent]['g_score'] + cost_to_travel
     cells[child]['parent'] = parent
 
+
 # Display the shortest path found
+
 def unwind_path(coord, slow):
     if cells[coord]['parent'] != None:
         left, top = coord
@@ -178,11 +205,14 @@ def unwind_path(coord, slow):
             showBoard(screen, board)
         unwind_path(cells[coord]['parent'], slow)
 
+
 # Recursive function to process the current node, which is the node with the smallest f_score from the list of open nodes
-def processNode(coord, slow):
-    global goal, open_list, closed_list, pq_dict, board, screen
+
+def processNode(coord, slow, step):
+    global goal, open_list, closed_list, pq_dict, board, screen, needs_refresh
     if coord == goal:
         unwind_path(cells[goal]['parent'], slow)
+        needs_refresh = True
         return
         
     # l will be a list of walkable adjacents that we've found a new shortest path to
@@ -238,42 +268,75 @@ def processNode(coord, slow):
     
     heapq.heapify(open_list)
     
-    if len(open_list) == 0:
-        print 'NO POSSIBLE PATH!'
-        return
-    f = heapq.heappop(open_list)
-    if len(pq_dict[f]) > 1:
-        node = pq_dict[f].pop()
-    else:
-        node = pq_dict.pop(f)[0]
+    if not step:
+        if len(open_list) == 0:
+            print 'NO POSSIBLE PATH!'
+            return
+        f = heapq.heappop(open_list)
+        if len(pq_dict[f]) > 1:
+            node = pq_dict[f].pop()
+        else:
+            node = pq_dict.pop(f)[0]
         
-    heapq.heapify(open_list)
-    closed_list[node]=True
+        heapq.heapify(open_list)
+        closed_list[node]=True
     
-    if node != goal:
-        left, top = node
-        left = (left*cell_size)+2
-        top = (top*cell_size)+2
-        r = pygame.Rect(left, top, cell_size-2, cell_size-2)
-        pygame.draw.rect(board, blue, r, 0)
-        if slow:
-            showBoard(screen, board)
+        if node != goal:
+            left, top = node
+            left = (left*cell_size)+2
+            top = (top*cell_size)+2
+            r = pygame.Rect(left, top, cell_size-2, cell_size-2)
+            pygame.draw.rect(board, blue, r, 0)
+            if slow:
+                showBoard(screen, board)
     
-    processNode(node, slow)
+        processNode(node, slow, step)
+
 
 # Start the search for the shortest path from start to goal
-def findPath(slow):
+
+def findPath(slow, step):
     if start != None and goal != None:
         cells[start]['g_score'] = 0
         calc_h(start)
         calc_f(start)
-        closed_list[start]=True
-        processNode(start, slow)
+        
+        if step:
+            open_list.append(cells[start]['f_score'])
+            pq_dict[cells[start]['f_score']] = [start]
+            if len(open_list) == 0:
+                print 'NO POSSIBLE PATH!'
+                return
+            f = heapq.heappop(open_list)
+            if len(pq_dict[f]) > 1:
+                node = pq_dict[f].pop()
+            else:
+                node = pq_dict.pop(f)[0]
+                
+            heapq.heapify(open_list)
+            closed_list[node]=True
+            
+            if node != goal and node != start:
+                left, top = node
+                left = (left*cell_size)+2
+                top = (top*cell_size)+2
+                r = pygame.Rect(left, top, cell_size-2, cell_size-2)
+                pygame.draw.rect(board, blue, r, 0)
+                if slow:
+                    showBoard(screen, board)
+                    
+            processNode(node, slow, step)
+        else:
+            closed_list[start]=True
+            processNode(start, slow, step)
+
 
 # Clean up code a little bit: This function draws a cell at (x,y)        
+
 def draw_cell(x, y, size, color):
     r = pygame.Rect(x, y, size, size)
     pygame.draw.rect(board, color, r, 0)
+
 
 # Draw that board, Son!
 board = initBoard(screen)
@@ -292,6 +355,10 @@ while 1:
         enter = key[pygame.K_RETURN]
         delete = key[pygame.K_BACKSPACE]
         right_arrow = key[pygame.K_RIGHT]
+        step_through = key[pygame.K_n]
+        one = key[pygame.K_1]
+        two = key[pygame.K_2]
+        three = key[pygame.K_3]
         
         # Find out where the mouse is
         x, y = pygame.mouse.get_pos()
@@ -359,7 +426,7 @@ while 1:
                 open_list = []
                 closed_list = {}
                 pq_dict = {}
-                needs_refresh = False
+                needs_refresh = step_started =False
             
             # Soft Reset Board (keep start, goal and walls)
             elif delete:
@@ -382,14 +449,53 @@ while 1:
                 open_list = []
                 closed_list = {}
                 pq_dict = {}
-                needs_refresh = False
+                needs_refresh = step_started= False
             
+            # Verbose Path Find
             elif enter and not needs_refresh:
-                findPath(slow = True)
+                findPath(slow = True, step = False)
                 needs_refresh = True
-                
+            
+            # Instant Path Find
             elif right_arrow and not needs_refresh:
-                findPath(slow = False)
+                findPath(slow = False, step = False)
                 needs_refresh = True
+            
+            # Start Step Through Path Find
+            elif step_through and not step_started:
+                findPath(slow = False, step = True)
+                step_started = True
                 
+            # Continue Step Through Path Find
+            elif step_through and step_started and not needs_refresh:
+                if len(open_list) == 0:
+                    print 'NO POSSIBLE PATH!'
+                f = heapq.heappop(open_list)
+                if len(pq_dict[f]) > 1:
+                    node = pq_dict[f].pop()
+                else:
+                    node = pq_dict.pop(f)[0]
+
+                heapq.heapify(open_list)
+                closed_list[node]=True
+
+                if node != goal and node != start:
+                    left, top = node
+                    left = (left*cell_size)+2
+                    top = (top*cell_size)+2
+                    r = pygame.Rect(left, top, cell_size-2, cell_size-2)
+                    pygame.draw.rect(board, blue, r, 0)
+                processNode(node, slow = False, step = True)
+                
+            # Change Heuristic to "As the Crow Flies"    
+            elif shift and one:
+                heuristic = 'crow'
+            
+            # Change Heuristic to "Manhattan Distance"
+            elif shift and two:
+                heuristic = 'manhattan'
+                
+            # Change Heuristic to Neive heuristic assuming h( ) = 0
+            elif shift and three:
+                heuristic = 'zero'
             showBoard(screen, board)

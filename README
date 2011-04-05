@@ -1,0 +1,21 @@
+This is a demonstration tool using Python 2.6 and PyGame for the A* Pathfinding Algorithm.
+
+After properly installing Python 2.6 and PyGame, to execute this demo:
+
+$ python path.py
+
+How to use it:
+
+CTRL + left click - Place/Remove Start square
+
+CTRL + right click - Place/Remove Goal square
+
+SHIFT + left click - Place/Remove a Wall square (You can hold this down and move the cursor to place several 
+						walls at a time)
+ESCAPE - Clear the entire board
+
+BACKSPACE - Clear path exploration, leaving Start, Goal and Wall squares
+
+ENTER - Find the shortest path (in Verbose/Slow mode)
+
+LEFT_ARROW - Find the shortest path

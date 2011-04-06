@@ -7,16 +7,28 @@ $ python path.py
 
 How to use it:
 
-CTRL + left click - Place/Remove Start square
+Cell Placement:
 
-CTRL + right click - Place/Remove Goal square
+Place/Remove Start square 		- CTRL + LEFT_CLICK
+Place/Remove Goal square 		- CTRL + RIGHT_CLICK
+Place/Remove a Wall square 		- SHIFT + LEFT_CLICK
+		Note: 	You can hold this down and move the cursor to place several 	
+				walls at a time
+				
+Reset Board:
 
-SHIFT + left click - Place/Remove a Wall square (You can hold this down and move the cursor to place several 
-						walls at a time)
-ESCAPE - Clear the entire board
+Clear the entire board 			- ESCAPE
+Soft clear board				- BACKSPACE
+		Note:	Leaves Start, Goal and Wall squares
+		
+Find Optimal Path:
 
-BACKSPACE - Clear path exploration, leaving Start, Goal and Wall squares
+Verbose Mode					- ENTER
+Instant							- RIGHT_ARROW
+Step Through Path				- N
 
-ENTER - Find the shortest path (in Verbose/Slow mode)
+Change Heuristics:
 
-LEFT_ARROW - Find the shortest path
+"Straight Line Distance"		- SHIFT + 1
+"Manhattan Distance"			- SHIFT + 2
+"Zero" (Nothing Known)			- SHIFT + 3

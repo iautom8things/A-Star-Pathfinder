@@ -7,7 +7,7 @@ import sys, pygame, math, heapq
 from pygame.locals import *
 
 # Adjust the size of the board and the cells
-cell_size = 25
+cell_size = 50
 num_cells = 20
 
 

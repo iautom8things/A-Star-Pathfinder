@@ -211,6 +211,7 @@ def unwind_path(coord, slow):
 def processNode(coord, slow, step):
     global goal, open_list, closed_list, pq_dict, board, screen, needs_refresh
     if coord == goal:
+        print "Cost %d\n" % cells[goal]['g_score']
         unwind_path(cells[goal]['parent'], slow)
         needs_refresh = True
         return

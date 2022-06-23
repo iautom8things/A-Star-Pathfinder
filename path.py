@@ -3,6 +3,10 @@
 # 
 # A demonstration of the A* Pathfinding Algorithm using Python 2.6 and PyGame
 
+#in order to run in a UNIX /Linux system and avoid 'pygame.error: No available video device'
+import os
+os.environ["SDL_VIDEODRIVER"] = "dummy"
+
 import sys, pygame, math, heapq
 from pygame.locals import *
 
@@ -211,7 +215,7 @@ def unwind_path(coord, slow):
 def processNode(coord, slow, step):
     global goal, open_list, closed_list, pq_dict, board, screen, needs_refresh
     if coord == goal:
-        print "Cost %d\n" % cells[goal]['g_score']
+        print("Cost %d\n" % cells[goal]['g_score'])
         unwind_path(cells[goal]['parent'], slow)
         needs_refresh = True
         return
@@ -271,7 +275,7 @@ def processNode(coord, slow, step):
     
     if not step:
         if len(open_list) == 0:
-            print 'NO POSSIBLE PATH!'
+            print('NO POSSIBLE PATH!')
             return
         f = heapq.heappop(open_list)
         if len(pq_dict[f]) > 1:
@@ -306,7 +310,7 @@ def findPath(slow, step):
             open_list.append(cells[start]['f_score'])
             pq_dict[cells[start]['f_score']] = [start]
             if len(open_list) == 0:
-                print 'NO POSSIBLE PATH!'
+                print('NO POSSIBLE PATH!')
                 return
             f = heapq.heappop(open_list)
             if len(pq_dict[f]) > 1:
@@ -470,7 +474,7 @@ while 1:
             # Continue Step Through Path Find
             elif step_through and step_started and not needs_refresh:
                 if len(open_list) == 0:
-                    print 'NO POSSIBLE PATH!'
+                    print('NO POSSIBLE PATH!')
                 f = heapq.heappop(open_list)
                 if len(pq_dict[f]) > 1:
                     node = pq_dict[f].pop()
